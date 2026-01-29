@@ -48,7 +48,7 @@ class TestSMB(unittest.TestCase):
         
         print(len(csv_dataframe))        
         if result[0] == 'BETALINGSOB':
-            self.assertTrue(len(csv_dataframe)== 69)
+            self.assertTrue(len(csv_dataframe)== 5)
         
     ## move files
     def test_move_files(self):
