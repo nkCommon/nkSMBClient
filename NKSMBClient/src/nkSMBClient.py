@@ -1,6 +1,7 @@
 import smbclient
 import io
 import pandas as pd
+from io import BytesIO
 
 
 class nkSMBClient:
@@ -39,7 +40,12 @@ class nkSMBClient:
             return pd.read_csv(f, **kwargs)
     
     
-    def move_file(self, source_file_path_in_share:str, target_file_path_in_share:str):
+    def move_file(
+        self, 
+        source_file_path_in_share:str, 
+        target_file_path_in_share:str
+        ):
+        
         if source_file_path_in_share is None:
             raise Exception("source filename missing")
         if target_file_path_in_share is None:
@@ -49,69 +55,24 @@ class nkSMBClient:
         target_smb_path = self._smb_path(target_file_path_in_share)
         
         smbclient.rename(source_smb_path, target_smb_path)
-        
-        
-        
-    # def get_first_file(self, read_data_path):
-    #     files = self.list_files()
-    #     if files:
-    #         return files[0]
-    #     return None
-    
-    
-    # # Set up configuration and database settings (same as main)   
-    # # Build SMB paths
-    # smb_path = fr"\\{server}\{share}\{path_in_share}"
-    # smb_read_data_path = fr"\\{server}\{share}\{read_data_path}"
-    
-    # # Ensure destination folder exists
-    # try:
-    #     smbclient.listdir(smb_read_data_path)
-    #     print(f"Destination folder exists: {smb_read_data_path}")
-    # except Exception:
-    #     # Create destination folder if it doesn't exist
-    #     print(f"Creating destination folder: {smb_read_data_path}")
-    #     smbclient.makedirs(smb_read_data_path, exist_ok=True)
-    
-    # # List files in SMB share
-    # print(f"Listing files in SMB share: {smb_path}")
-    # files = smbclient.listdir(smb_path)
-    # print(f"Found {len(files)} files")
-    
-    # # Create temporary directory for downloaded files
-    # with tempfile.TemporaryDirectory() as temp_dir:
-    #     # Filter for CSV files and process each one
-    #     csv_files = [f for f in files if f.lower().endswith('.csv')]
-    #     print(f"Found {len(csv_files)} CSV files to process")
-        
-    #     for filename in files:
-    #         # Construct SMB path using backslashes (Windows UNC format)
-    #         smb_file_path = fr"{smb_path}\{filename}"
-    #         temp_file_path = os.path.join(temp_dir, filename)
-            
-    #         try:
-    #             print(f"Downloading file: {smb_file_path}")
-    #             # Download file from SMB share to temporary location
-    #             with smbclient.open_file(smb_file_path, mode='rb') as smb_file:
-    #                 with open(temp_file_path, 'wb') as local_file:
-    #                     shutil.copyfileobj(smb_file, local_file)
-                
-    #             print(f"Processing file: {filename}")
 
-    #             # Process the downloaded file (placeholder for actual processing logic)
+    def read_excel_from_smb(
+        self,
+        path_in_share: str,
+        sheet_name=0,
+        **pd_kwargs,
+    ) -> pd.DataFrame:
+        """
+        Read an Excel file from an SMB share into a pandas DataFrame.
+        path_in_share example: 'revenue/data/file.xlsx'
+        """
+        # smbclient.register_session(server, username=username, password=password)
+        smb_path = self._smb_path(path_in_share)
 
-    #             print(f"Successfully processed: {filename}")
-                
-    #             # Move file to read_data folder after successful processing
-    #             destination_path = fr"{smb_read_data_path}\{filename}"
-    #             try:
-    #                 smbclient.rename(smb_file_path, destination_path)
-    #                 print(f"Moved file to: {destination_path}")
-    #             except Exception as move_error:
-    #                 print(f"Warning: Failed to move file {filename} to read_data folder: {str(move_error)}")
-                
-    #         except Exception as e:
-    #             print(f"Error processing {filename}: {str(e)}")
-    #             rows_failed += 1
+        with smbclient.open_file(smb_path, mode="rb") as f:
+            data = f.read()
+
+        return pd.read_excel(BytesIO(data), sheet_name=sheet_name, **pd_kwargs)        
     
-
+        
+        

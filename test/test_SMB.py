@@ -13,6 +13,7 @@ class TestSMB(unittest.TestCase):
         self.server = os.getenv("SMB_SERVER")
         self.share = os.getenv("SMB_SHARE")
         self.path_in_share = r"Tools\testdata"
+        self.path_in_share_rules = r"Tools\test_rules"
         self.path_in_share_moved = r"Tools\testdata_moved"
         self.headers = str("point,timeofcreation,deliveryid,accountnumber,bookingdate,valuedate,currencycode,bookedamount,currencycodeorigin,bookedamountorigin,shortadvice,technical,startingbalance,balance,extendedadvice1,extendedadvice2,extendedadvice3,extendedadvice4,extendedadvice5,extendedadvice6,extendedadvice7,extendedadvice8,extendedadvice9,extendedadvice10,extendedadvice11,extendedadvice12,extendedadvice13,extendedadvice14,extendedadvice15,extendedadvice16,extendedadvice17,extendedadvice18,extendedadvice19,extendedadvice20,extendedadvice21,extendedadvice22,extendedadvice23,extendedadvice24,extendedadvice25,extendedadvice26,extendedadvice27,extendedadvice28,extendedadvice29,extendedadvice30,extendedadvice31,extendedadvice32,extendedadvice33,extendedadvice34,extendedadvice35,extendedadvice36,extendedadvice37,extendedadvice38,extendedadvice39,extendedadvice40,extendedadvice41,extendedadvice42,extendedadvice43,extendedadvice44,extendedadvice45,extendedadvice46,extendedadvice47,extendedadvice48,extendedadvice49").split(',')
         return super().setUp()
@@ -28,7 +29,7 @@ class TestSMB(unittest.TestCase):
         print(result)
         self.assertTrue(len(result)==3)
     ## read files
-    def test_get_files(self):
+    def test_read_csv_files(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         result = client.list_files(path_in_share=self.path_in_share)
         print(result)
@@ -50,6 +51,31 @@ class TestSMB(unittest.TestCase):
         if result[0] == 'BETALINGSOB':
             self.assertTrue(len(csv_dataframe)== 5)
         
+    def test_read_excel_files(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        result = client.list_files(path_in_share=self.path_in_share_rules)
+        print(result)
+        self.assertTrue(len(result)==4)
+        
+        excel_path = fr"{self.path_in_share_rules}\{result[0]}"
+        
+        print(f"Reading csv file: {excel_path}")
+        
+        first_row_is_header=0
+        rule_columns = ["RULE_ID","SELECTOR"]
+        dtype={"RULE_ID": int, "SELECTOR": str}
+        
+        excel_dataframe = client.read_excel_from_smb(
+            path_in_share=excel_path,
+            sheet_name="SQLRules_2",
+            header = first_row_is_header,
+            usecols=rule_columns,
+            dtype=dtype
+            )
+        print(len(excel_dataframe))        
+        if result[0] == 'BogføringsRegler for HovedKonto.xlsx':
+            self.assertTrue(len(excel_dataframe)== 178)
+
     ## move files
     def test_move_files(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
