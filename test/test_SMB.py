@@ -13,6 +13,7 @@ class TestSMB(unittest.TestCase):
         self.server = os.getenv("SMB_SERVER")
         self.share = os.getenv("SMB_SHARE")
         self.path_in_share = r"Tools\testdata"
+        self.path_in_share_privateGPTTest = r"Tools\privateGPTTest"
         self.path_in_share_rules = r"Tools\test_rules"
         self.path_in_share_moved = r"Tools\testdata_moved"
         self.headers = str("point,timeofcreation,deliveryid,accountnumber,bookingdate,valuedate,currencycode,bookedamount,currencycodeorigin,bookedamountorigin,shortadvice,technical,startingbalance,balance,extendedadvice1,extendedadvice2,extendedadvice3,extendedadvice4,extendedadvice5,extendedadvice6,extendedadvice7,extendedadvice8,extendedadvice9,extendedadvice10,extendedadvice11,extendedadvice12,extendedadvice13,extendedadvice14,extendedadvice15,extendedadvice16,extendedadvice17,extendedadvice18,extendedadvice19,extendedadvice20,extendedadvice21,extendedadvice22,extendedadvice23,extendedadvice24,extendedadvice25,extendedadvice26,extendedadvice27,extendedadvice28,extendedadvice29,extendedadvice30,extendedadvice31,extendedadvice32,extendedadvice33,extendedadvice34,extendedadvice35,extendedadvice36,extendedadvice37,extendedadvice38,extendedadvice39,extendedadvice40,extendedadvice41,extendedadvice42,extendedadvice43,extendedadvice44,extendedadvice45,extendedadvice46,extendedadvice47,extendedadvice48,extendedadvice49").split(',')
@@ -28,6 +29,21 @@ class TestSMB(unittest.TestCase):
         result = client.list_files(path_in_share=self.path_in_share)
         print(result)
         self.assertTrue(len(result)==3)
+
+    def test_list_files_privateGPTTest(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        # All files only, recursive, exclude .DS_Store (default)
+        result = client.list_files(
+            path_in_share=self.path_in_share_privateGPTTest,
+            files_only=True,
+            recursive=True,
+        )
+        print(result)
+        self.assertTrue(len(result)==4)
+        
+        
+       
+    
     ## read files
     def test_read_csv_files(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
