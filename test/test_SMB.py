@@ -39,7 +39,7 @@ class TestSMB(unittest.TestCase):
             recursive=True,
         )
         print(result)
-        self.assertTrue(len(result)==4)
+        self.assertTrue(len(result)==5)
         
         
        
