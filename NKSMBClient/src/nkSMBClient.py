@@ -18,6 +18,17 @@ class FileInfo:
     last_modified: datetime | None
     is_dir: bool | None = None  # Set when files_only=False
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, FileInfo) :
+            return False
+            
+        return self.name == other.name and self.folder == other.folder and self.size == other.size and self.creation_time == other.creation_time and self.last_modified == other.last_modified and self.is_dir == other.is_dir
+    
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
+    
+    def __hash__(self) -> int:
+        return hash((self.name, self.folder, self.size, self.creation_time, self.last_modified, self.is_dir))
 
 class nkSMBClient:
     def __init__(self, server, share, username, password):
