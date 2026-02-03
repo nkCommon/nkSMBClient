@@ -16,7 +16,7 @@ class TestSMB(unittest.TestCase):
         self.server = os.getenv("SMB_SERVER")
         self.share = os.getenv("SMB_SHARE")
         self.path_in_share = r"Tools\testdata"
-        self.path_in_share_privateGPTTest = r"Tools\privateGPTTest"
+        self.path_in_share_privateGPTTest = r"privateGPT\RAGS"
         self.path_in_share_rules = r"Tools\test_rules"
         self.path_in_share_moved = r"Tools\testdata_moved"
         self.headers = str("point,timeofcreation,deliveryid,accountnumber,bookingdate,valuedate,currencycode,bookedamount,currencycodeorigin,bookedamountorigin,shortadvice,technical,startingbalance,balance,extendedadvice1,extendedadvice2,extendedadvice3,extendedadvice4,extendedadvice5,extendedadvice6,extendedadvice7,extendedadvice8,extendedadvice9,extendedadvice10,extendedadvice11,extendedadvice12,extendedadvice13,extendedadvice14,extendedadvice15,extendedadvice16,extendedadvice17,extendedadvice18,extendedadvice19,extendedadvice20,extendedadvice21,extendedadvice22,extendedadvice23,extendedadvice24,extendedadvice25,extendedadvice26,extendedadvice27,extendedadvice28,extendedadvice29,extendedadvice30,extendedadvice31,extendedadvice32,extendedadvice33,extendedadvice34,extendedadvice35,extendedadvice36,extendedadvice37,extendedadvice38,extendedadvice39,extendedadvice40,extendedadvice41,extendedadvice42,extendedadvice43,extendedadvice44,extendedadvice45,extendedadvice46,extendedadvice47,extendedadvice48,extendedadvice49").split(',')
@@ -124,7 +124,6 @@ class TestSMB(unittest.TestCase):
     def test_getfileinfo(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         result = client.list_files(path_in_share=self.path_in_share, files_only = True, include_metadata=True)
-            
 
         print(result)
         self.assertTrue(len(result)==3)
@@ -143,3 +142,15 @@ class TestSMB(unittest.TestCase):
                 self.assertTrue(fileinfo.size == 22053)
             if fileinfo.name == 'NEMKONTO':
                 self.assertTrue(fileinfo.size == 48284)
+
+    def test_list_folders(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        folders = client.list_folders(path_in_share=self.path_in_share_privateGPTTest, recursive=True, max_depth=0)
+        print(folders)
+        self.assertTrue(len(folders)==3)
+
+    def test_list_files_with_metadata_toplevel(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        files = client.list_files(path_in_share=self.path_in_share_privateGPTTest, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        print(files)
+        self.assertTrue(len(files)==4)
