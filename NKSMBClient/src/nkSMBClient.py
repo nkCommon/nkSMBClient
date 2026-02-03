@@ -1,4 +1,5 @@
 import smbclient
+import os
 import io
 import pandas as pd
 from io import BytesIO
@@ -90,11 +91,12 @@ class nkSMBClient:
         with smbclient.open_file(smb_path, mode="rb") as f:
             return pd.read_csv(f, **kwargs)
     
-    
+    ## TODO: Implement create_folders_if_not_exist
     def move_file(
         self, 
         source_file_path_in_share:str, 
-        target_file_path_in_share:str
+        target_file_path_in_share:str,
+        create_folders_if_not_exist: bool = False
         ):
         
         if source_file_path_in_share is None:
@@ -104,8 +106,18 @@ class nkSMBClient:
 
         source_smb_path = self._smb_path(source_file_path_in_share)
         target_smb_path = self._smb_path(target_file_path_in_share)
-        
+
+        if create_folders_if_not_exist:
+            target_folder_path = os.path.dirname(target_smb_path)
+            if target_folder_path:
+                self.make_dirs(target_folder_path)
+
+
         smbclient.rename(source_smb_path, target_smb_path)
+
+    def make_dirs(self, path_in_share: str):
+        smb_path = self._smb_path(path_in_share)
+        smbclient.mkdir(smb_path)
 
     def read_excel_from_smb(
         self,
