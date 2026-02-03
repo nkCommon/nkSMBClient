@@ -2,8 +2,20 @@ import smbclient
 import os
 import io
 import pandas as pd
+from dataclasses import dataclass
+from datetime import datetime
 from io import BytesIO
-from typing import Collection
+from typing import Any, Collection
+
+
+@dataclass
+class FileInfo:
+    """File or directory info from list_files(include_metadata=True)."""
+    name: str
+    size: int | None
+    creation_time: datetime | None
+    last_modified: datetime | None
+    is_dir: bool | None = None  # Set when files_only=False
 
 
 class nkSMBClient:
@@ -29,6 +41,7 @@ class nkSMBClient:
         files_only: bool = False,
         recursive: bool = False,
         exclude_names: Collection[str] | None = (".DS_Store",),
+        include_metadata: bool = False,
     ):
         """
         List names in a directory on the share.
@@ -38,9 +51,12 @@ class nkSMBClient:
             files_only: If True, return only file names (exclude directories).
             recursive: If True, walk subdirectories and return paths relative to path_in_share.
             exclude_names: Names to exclude from the list (e.g. .DS_Store). Use () to include all.
+            include_metadata: If True, return a list of FileInfo with name, size,
+                creation_time, last_modified (and is_dir when not files_only).
 
         Returns:
-            List of names (or relative paths when recursive=True).
+            List of names (or relative paths when recursive=True), or list of
+            FileInfo when include_metadata=True.
         """
         smb_path = self._smb_path(path_in_share)
         exclude = set(exclude_names or ())
@@ -48,7 +64,27 @@ class nkSMBClient:
         def _should_include(name: str) -> bool:
             return name not in exclude and name not in (".", "..")
 
+        def _entry_info(entry: Any, rel_name: str) -> FileInfo:
+            st = entry.stat()
+            return FileInfo(
+                name=rel_name,
+                size=getattr(st, "st_size", None),
+                creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
+                last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
+                is_dir=entry.is_dir() if not files_only else None,
+            )
+
         if not recursive:
+            if include_metadata:
+                result = []
+                for entry in smbclient.scandir(smb_path):
+                    if not _should_include(entry.name):
+                        continue
+                    if files_only and not entry.is_file():
+                        continue
+                    result.append(_entry_info(entry, entry.name))
+                self.files = result
+                return self.files
             if files_only:
                 result = []
                 for entry in smbclient.scandir(smb_path):
@@ -59,7 +95,7 @@ class nkSMBClient:
             self.files = [n for n in smbclient.listdir(smb_path) if _should_include(n)]
             return self.files
 
-        # Recursive: walk and collect relative paths
+        # Recursive: walk and collect relative paths (or metadata)
         result = []
 
         def _walk(prefix: str, smb_dir: str) -> None:
@@ -68,8 +104,13 @@ class nkSMBClient:
                     continue
                 rel = f"{prefix}{entry.name}" if prefix else entry.name
                 if entry.is_file():
-                    result.append(rel)
+                    if include_metadata:
+                        result.append(_entry_info(entry, rel))
+                    else:
+                        result.append(rel)
                 elif entry.is_dir():
+                    if include_metadata and not files_only:
+                        result.append(_entry_info(entry, rel))
                     sub_smb = f"{smb_dir}\\{entry.name}"
                     sub_prefix = f"{rel}\\"
                     _walk(sub_prefix, sub_smb)
@@ -95,8 +136,7 @@ class nkSMBClient:
     def move_file(
         self, 
         source_file_path_in_share:str, 
-        target_file_path_in_share:str,
-        create_folders_if_not_exist: bool = False
+        target_file_path_in_share:str
         ):
         
         if source_file_path_in_share is None:
@@ -106,11 +146,6 @@ class nkSMBClient:
 
         source_smb_path = self._smb_path(source_file_path_in_share)
         target_smb_path = self._smb_path(target_file_path_in_share)
-
-        if create_folders_if_not_exist:
-            target_folder_path = os.path.dirname(target_smb_path)
-            if target_folder_path:
-                self.make_dirs(target_folder_path)
 
 
         smbclient.rename(source_smb_path, target_smb_path)

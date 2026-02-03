@@ -1,5 +1,8 @@
+from pydoc import cli
 import unittest
 from datetime import datetime
+
+from spnego import client
 from NKSMBClient.src.nkSMBClient import nkSMBClient
 import os
 from dotenv import load_dotenv
@@ -117,4 +120,26 @@ class TestSMB(unittest.TestCase):
         self.assertTrue(len(result)==0)
         result = client.list_files(path_in_share=self.path_in_share)
         self.assertTrue(len(result)==3)
+
+    def test_getfileinfo(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        result = client.list_files(path_in_share=self.path_in_share, files_only = True, include_metadata=True)
+            
+
+        print(result)
+        self.assertTrue(len(result)==3)
         
+        for fileinfo in result:
+            print(fileinfo.name)
+            print(fileinfo.size)
+            print(fileinfo.creation_time)
+            print(fileinfo.last_modified)
+            print(fileinfo.is_dir)
+            self.assertTrue(fileinfo.name is not None)
+            
+            if fileinfo.name == 'BETALINGSOB':
+                self.assertTrue(fileinfo.size == 1913)
+            if fileinfo.name == 'HOVEDKONTO':
+                self.assertTrue(fileinfo.size == 22053)
+            if fileinfo.name == 'NEMKONTO':
+                self.assertTrue(fileinfo.size == 48284)
