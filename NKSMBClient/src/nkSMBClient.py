@@ -11,7 +11,8 @@ from typing import Any, Collection
 @dataclass
 class FileInfo:
     """File or directory info from list_files(include_metadata=True)."""
-    name: str
+    name: str  # Base name only (no folder path)
+    folder: str  # Folder path relative to list_files path ("" if at root)
     size: int | None
     creation_time: datetime | None
     last_modified: datetime | None
@@ -51,8 +52,9 @@ class nkSMBClient:
             files_only: If True, return only file names (exclude directories).
             recursive: If True, walk subdirectories and return paths relative to path_in_share.
             exclude_names: Names to exclude from the list (e.g. .DS_Store). Use () to include all.
-            include_metadata: If True, return a list of FileInfo with name, size,
-                creation_time, last_modified (and is_dir when not files_only).
+            include_metadata: If True, return a list of FileInfo with name (base name only),
+                folder (path relative to list path), size, creation_time, last_modified
+                (and is_dir when not files_only).
 
         Returns:
             List of names (or relative paths when recursive=True), or list of
@@ -64,10 +66,19 @@ class nkSMBClient:
         def _should_include(name: str) -> bool:
             return name not in exclude and name not in (".", "..")
 
+        def _split_folder_name(rel_path: str) -> tuple[str, str]:
+            """Split 'folder1\\sub\\file.txt' into ('folder1\\sub', 'file.txt')."""
+            if "\\" in rel_path:
+                idx = rel_path.rfind("\\")
+                return rel_path[:idx], rel_path[idx + 1:]
+            return "", rel_path
+
         def _entry_info(entry: Any, rel_name: str) -> FileInfo:
+            folder, name = _split_folder_name(rel_name)
             st = entry.stat()
             return FileInfo(
-                name=rel_name,
+                name=name,
+                folder=folder,
                 size=getattr(st, "st_size", None),
                 creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
                 last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
