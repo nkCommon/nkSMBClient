@@ -285,5 +285,11 @@ class nkSMBClient:
 
         return pd.read_excel(BytesIO(data), sheet_name=sheet_name, **pd_kwargs)        
     
-        
+    def download_file(self, file_path_in_share: str, local_file_path: str):
+        smb_path = self._smb_path(file_path_in_share)
+        with smbclient.open_file(smb_path, mode="rb") as f:
+            data = f.read()
+
+        with open(local_file_path, "wb") as f:
+            f.write(data)
         
