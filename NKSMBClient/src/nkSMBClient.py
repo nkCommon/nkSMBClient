@@ -17,6 +17,7 @@ class FileInfo:
     creation_time: datetime | None
     last_modified: datetime | None
     is_dir: bool | None = None  # Set when files_only=False
+    full_share_path: str | None = None
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, FileInfo) :
@@ -89,9 +90,17 @@ class nkSMBClient:
                     idx = rel_path.rfind("\\")
                     return rel_path[:idx], rel_path[idx + 1:]
                 return "", rel_path
-
+            
+            def _get_full_path_name(rel_path: str) -> str:
+                if "\\" in rel_path:
+                    idx = rel_path.rfind("\\")
+                    full_path_name = rel_path[:idx].replace(f"\\\\{self.server}\\{self.share}\\", "")
+                    return full_path_name
+                return ""
+            
             def _entry_info(entry: Any, rel_name: str) -> FileInfo:
                 folder, name = _split_folder_name(entry.path, nearest_folder=True)#rel_name)
+                full_share_path = _get_full_path_name(entry.path)
                 st = entry.stat()
                 return FileInfo(
                     name=name,
@@ -100,6 +109,7 @@ class nkSMBClient:
                     creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
                     last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
                     is_dir=entry.is_dir() if not files_only else None,
+                    full_share_path=full_share_path,
                 )
 
             if not recursive:
@@ -186,9 +196,15 @@ class nkSMBClient:
                 idx = rel_path.rfind("\\")
                 return rel_path[:idx], rel_path[idx + 1:]
             return "", rel_path
-
+        def _get_full_path_name(rel_path: str) -> str:
+            if "\\" in rel_path:
+                idx = rel_path.rfind("\\")
+                full_path_name = rel_path[:idx].replace(f"\\\\{self.server}\\{self.share}\\", "")
+                return full_path_name
+            return ""
         def _entry_info(entry: Any, rel_name: str) -> FileInfo:
             folder, name = _split_folder_name(rel_name)
+            full_share_path = _get_full_path_name(entry.path)
             st = entry.stat()
             return FileInfo(
                 name=name,
@@ -197,6 +213,7 @@ class nkSMBClient:
                 creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
                 last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
                 is_dir=True,
+                full_share_path=full_share_path,
             )
 
         if not recursive:
