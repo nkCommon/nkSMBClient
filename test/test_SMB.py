@@ -32,6 +32,11 @@ class TestSMB(unittest.TestCase):
         result = client.list_files(path_in_share=self.path_in_share)
         print(result)
         self.assertTrue(len(result)==3)
+        result = client.list_files(path_in_share=self.path_in_share, include_metadata=True)
+        print(result)
+        self.assertTrue(len(result)==3)
+
+
 
     def test_list_files_privateGPTTest(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)

@@ -22,13 +22,13 @@ class FileInfo:
         if not isinstance(other, FileInfo) :
             return False
             
-        return self.name == other.name and self.folder == other.folder and self.size == other.size and self.creation_time == other.creation_time and self.last_modified == other.last_modified and self.is_dir == other.is_dir
+        return self.name == other.name and self.folder == other.folder and self.size == other.size and self.last_modified == other.last_modified
     
     def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
     
     def __hash__(self) -> int:
-        return hash((self.name, self.folder, self.size, self.creation_time, self.last_modified, self.is_dir))
+        return hash((self.name, self.folder, self.size, self.last_modified))
 
 class nkSMBClient:
     def __init__(self, server, share, username, password):
@@ -80,15 +80,17 @@ class nkSMBClient:
         def _should_include(name: str) -> bool:
             return name not in exclude and name not in (".", "..")
 
-        def _split_folder_name(rel_path: str) -> tuple[str, str]:
+        def _split_folder_name(rel_path: str, nearest_folder: bool = False) -> tuple[str, str]:
             """Split 'folder1\\sub\\file.txt' into ('folder1\\sub', 'file.txt')."""
+            if nearest_folder:
+                return rel_path.split("\\")[-2], rel_path.split("\\")[-1]
             if "\\" in rel_path:
                 idx = rel_path.rfind("\\")
                 return rel_path[:idx], rel_path[idx + 1:]
             return "", rel_path
 
         def _entry_info(entry: Any, rel_name: str) -> FileInfo:
-            folder, name = _split_folder_name(rel_name)
+            folder, name = _split_folder_name(entry.path, nearest_folder=True)#rel_name)
             st = entry.stat()
             return FileInfo(
                 name=name,
