@@ -74,79 +74,82 @@ class nkSMBClient:
             List of names (or relative paths when recursive=True), or list of
             FileInfo when include_metadata=True.
         """
-        smb_path = self._smb_path(path_in_share)
-        exclude = set(exclude_names or ())
+        try:
+            smb_path = self._smb_path(path_in_share)
+            exclude = set(exclude_names or ())
 
-        def _should_include(name: str) -> bool:
-            return name not in exclude and name not in (".", "..")
+            def _should_include(name: str) -> bool:
+                return name not in exclude and name not in (".", "..")
 
-        def _split_folder_name(rel_path: str, nearest_folder: bool = False) -> tuple[str, str]:
-            """Split 'folder1\\sub\\file.txt' into ('folder1\\sub', 'file.txt')."""
-            if nearest_folder:
-                return rel_path.split("\\")[-2], rel_path.split("\\")[-1]
-            if "\\" in rel_path:
-                idx = rel_path.rfind("\\")
-                return rel_path[:idx], rel_path[idx + 1:]
-            return "", rel_path
+            def _split_folder_name(rel_path: str, nearest_folder: bool = False) -> tuple[str, str]:
+                """Split 'folder1\\sub\\file.txt' into ('folder1\\sub', 'file.txt')."""
+                if nearest_folder:
+                    return rel_path.split("\\")[-2], rel_path.split("\\")[-1]
+                if "\\" in rel_path:
+                    idx = rel_path.rfind("\\")
+                    return rel_path[:idx], rel_path[idx + 1:]
+                return "", rel_path
 
-        def _entry_info(entry: Any, rel_name: str) -> FileInfo:
-            folder, name = _split_folder_name(entry.path, nearest_folder=True)#rel_name)
-            st = entry.stat()
-            return FileInfo(
-                name=name,
-                folder=folder,
-                size=getattr(st, "st_size", None),
-                creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
-                last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
-                is_dir=entry.is_dir() if not files_only else None,
-            )
+            def _entry_info(entry: Any, rel_name: str) -> FileInfo:
+                folder, name = _split_folder_name(entry.path, nearest_folder=True)#rel_name)
+                st = entry.stat()
+                return FileInfo(
+                    name=name,
+                    folder=folder,
+                    size=getattr(st, "st_size", None),
+                    creation_time=datetime.fromtimestamp(st.st_ctime) if st.st_ctime else None,
+                    last_modified=datetime.fromtimestamp(st.st_mtime) if st.st_mtime else None,
+                    is_dir=entry.is_dir() if not files_only else None,
+                )
 
-        if not recursive:
-            if include_metadata:
-                result = []
-                for entry in smbclient.scandir(smb_path):
+            if not recursive:
+                if include_metadata:
+                    result = []
+                    for entry in smbclient.scandir(smb_path):
+                        if not _should_include(entry.name):
+                            continue
+                        if files_only and not entry.is_file():
+                            continue
+                        result.append(_entry_info(entry, entry.name))
+                    self.files = result
+                    return self.files
+                if files_only:
+                    result = []
+                    for entry in smbclient.scandir(smb_path):
+                        if _should_include(entry.name) and entry.is_file():
+                            result.append(entry.name)
+                    self.files = result
+                    return self.files
+                self.files = [n for n in smbclient.listdir(smb_path) if _should_include(n)]
+                return self.files
+
+            # Recursive: walk and collect relative paths (or metadata)
+            result = []
+
+            def _walk(prefix: str, smb_dir: str, depth: int = 0) -> None:
+                for entry in smbclient.scandir(smb_dir):
                     if not _should_include(entry.name):
                         continue
-                    if files_only and not entry.is_file():
-                        continue
-                    result.append(_entry_info(entry, entry.name))
-                self.files = result
-                return self.files
-            if files_only:
-                result = []
-                for entry in smbclient.scandir(smb_path):
-                    if _should_include(entry.name) and entry.is_file():
-                        result.append(entry.name)
-                self.files = result
-                return self.files
-            self.files = [n for n in smbclient.listdir(smb_path) if _should_include(n)]
+                    rel = f"{prefix}{entry.name}" if prefix else entry.name
+                    if entry.is_file():
+                        if include_metadata:
+                            result.append(_entry_info(entry, rel))
+                        else:
+                            result.append(rel)
+                    elif entry.is_dir():
+                        if include_metadata and not files_only:
+                            result.append(_entry_info(entry, rel))
+                        if max_depth is None or depth < max_depth:
+                            sub_smb = f"{smb_dir}\\{entry.name}"
+                            sub_prefix = f"{rel}\\"
+                            _walk(sub_prefix, sub_smb, depth + 1)
+
+            _walk("", smb_path)
+            self.files = result
             return self.files
-
-        # Recursive: walk and collect relative paths (or metadata)
-        result = []
-
-        def _walk(prefix: str, smb_dir: str, depth: int = 0) -> None:
-            for entry in smbclient.scandir(smb_dir):
-                if not _should_include(entry.name):
-                    continue
-                rel = f"{prefix}{entry.name}" if prefix else entry.name
-                if entry.is_file():
-                    if include_metadata:
-                        result.append(_entry_info(entry, rel))
-                    else:
-                        result.append(rel)
-                elif entry.is_dir():
-                    if include_metadata and not files_only:
-                        result.append(_entry_info(entry, rel))
-                    if max_depth is None or depth < max_depth:
-                        sub_smb = f"{smb_dir}\\{entry.name}"
-                        sub_prefix = f"{rel}\\"
-                        _walk(sub_prefix, sub_smb, depth + 1)
-
-        _walk("", smb_path)
-        self.files = result
-        return self.files
-
+        except Exception as e:
+            return []
+        
     def list_folders(
         self,
         path_in_share: str,
