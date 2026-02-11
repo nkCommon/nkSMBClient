@@ -276,8 +276,11 @@ class nkSMBClient:
         Returns:
             The parsed JSON as a dict.
         """
-        text = self.read_text(path_in_share, encoding=encoding)
-        return json.loads(text, **json_kwargs)
+        try:
+            text = self.read_text(path_in_share, encoding=encoding)
+            return json.loads(text, **json_kwargs)
+        except Exception as e:
+            return None
 
     def read_csv(self, file_path_in_share: str, **kwargs) -> pd.DataFrame:
         smb_path = self._smb_path(file_path_in_share)
