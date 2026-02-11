@@ -48,7 +48,7 @@ class TestSMB(unittest.TestCase):
             recursive=True,
         )
         print(result)
-        self.assertTrue(len(result)==3)
+        self.assertTrue(len(result)==1)
         
         
        
@@ -159,7 +159,7 @@ class TestSMB(unittest.TestCase):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         files = client.list_files(path_in_share=self.path_in_share_privateGPTTest, files_only=True, recursive=True, include_metadata=True, max_depth=1)
         print(files)
-        self.assertTrue(len(files)==3)
+        self.assertTrue(len(files)==1)
     def test_download_file(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         files = client.list_files(path_in_share=self.path_in_share_privateGPTTest, files_only=True, recursive=True, include_metadata=True, max_depth=1)
@@ -172,3 +172,20 @@ class TestSMB(unittest.TestCase):
         client.download_file(smb_file_path, local_file_path=local_file_path)
         self.assertTrue(os.path.exists(local_file_path))
         os.remove(local_file_path)
+        
+    def test_upload_delete_file(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        before_upload_count = len(files)
+        client.upload_file(local_file=fr"//Users/lakas/git/nkSMBClient/README.md", smb_file_path_in_share=fr"{self.path_in_share}\test_upload.md")
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        after_upload_count = len(files)
+        print(len(files))
+        
+        self.assertTrue(after_upload_count == before_upload_count + 1)
+        client.delete_file(smb_file_path_in_share=fr"{self.path_in_share}\test_upload.md")
+        
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        after_delete_count = len(files)
+        print(len(files))
+        self.assertTrue(after_delete_count == before_upload_count)

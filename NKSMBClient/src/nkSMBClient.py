@@ -310,3 +310,15 @@ class nkSMBClient:
         with open(local_file_path, "wb") as f:
             f.write(data)
         
+    def upload_file(self, local_file: str, smb_file_path_in_share: str):
+        smb_path = self._smb_path(smb_file_path_in_share)
+        with open(local_file, "rb") as f:
+            data = f.read()
+
+        with smbclient.open_file(smb_path, mode="wb") as f:
+            f.write(data)
+    
+    def delete_file(self, smb_file_path_in_share: str):
+        smb_path = self._smb_path(smb_file_path_in_share)
+        smbclient.remove(smb_path)
+        
