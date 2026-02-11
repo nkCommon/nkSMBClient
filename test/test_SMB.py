@@ -198,11 +198,12 @@ class TestSMB(unittest.TestCase):
         data = {
             "name": "test",
             "age": 30,
-            "city": "Stege"
+            "city": "Stege",
+            "test_value": "øæåÆØÅ"
         }
         
         
-        client.save_dict(data=data, path_in_share=fr"{self.path_in_share}\test_upload.json")
+        client.save_dict(data=data, path_in_share=fr"{self.path_in_share}\test_upload.json", create_folders_if_not_exist=True, indent=2, ensure_ascii=False)
         
         
         files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
