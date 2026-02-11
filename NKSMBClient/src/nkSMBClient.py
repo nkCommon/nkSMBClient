@@ -258,6 +258,27 @@ class nkSMBClient:
     def read_text(self, file_path_in_share: str, encoding="utf-8") -> str:
         return self.read_bytes(file_path_in_share).decode(encoding)
 
+    def read_dict(
+        self,
+        path_in_share: str,
+        *,
+        encoding: str = "utf-8",
+        **json_kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        Read a JSON file from the SMB share and return its contents as a dict.
+
+        Args:
+            path_in_share: File path relative to the share (e.g. "Tools\\data\\config.json").
+            encoding: Text encoding of the file (default utf-8).
+            **json_kwargs: Passed to json.loads (e.g. object_hook).
+
+        Returns:
+            The parsed JSON as a dict.
+        """
+        text = self.read_text(path_in_share, encoding=encoding)
+        return json.loads(text, **json_kwargs)
+
     def read_csv(self, file_path_in_share: str, **kwargs) -> pd.DataFrame:
         smb_path = self._smb_path(file_path_in_share)
         with smbclient.open_file(smb_path, mode="rb") as f:

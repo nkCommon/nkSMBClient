@@ -6,7 +6,8 @@ from spnego import client
 from NKSMBClient.src.nkSMBClient import nkSMBClient
 import os
 from dotenv import load_dotenv
-
+import json
+import hashlib
 # load_dotenv()
 
 class TestSMB(unittest.TestCase):
@@ -190,7 +191,7 @@ class TestSMB(unittest.TestCase):
         print(len(files))
         self.assertTrue(after_delete_count == before_upload_count)
     
-    def test_json_upload_delete_file(self):
+    def test_dict_to_file(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
         before_upload_count = len(files)
@@ -202,13 +203,31 @@ class TestSMB(unittest.TestCase):
             "test_value": "øæåÆØÅ"
         }
         
-        
+        ## upload dict
         client.save_dict(data=data, path_in_share=fr"{self.path_in_share}\test_upload.json", create_folders_if_not_exist=True, indent=2, ensure_ascii=False)
         
         
         files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
         after_upload_count = len(files)
         print(len(files))
+        
+        ## read dict
+        read_data = client.read_dict(path_in_share=fr"{self.path_in_share}\test_upload.json", encoding="utf-8")
+        
+        print(read_data)
+        print(data)
+
+        data_string = json.dumps(data, sort_keys=True, ensure_ascii=False)
+        hash_value_1 = hashlib.sha256(data_string.encode("utf-8")).hexdigest()
+        
+        data_string_read = json.dumps(read_data, sort_keys=True, ensure_ascii=False)
+        hash_value_2 = hashlib.sha256(data_string_read.encode("utf-8")).hexdigest()
+
+        print(hash_value_1)
+        print(hash_value_2)
+        
+        self.assertTrue(hash_value_1 == hash_value_2)
+
         
         self.assertTrue(after_upload_count == before_upload_count + 1)
         client.delete_file(smb_file_path_in_share=fr"{self.path_in_share}\test_upload.json")
