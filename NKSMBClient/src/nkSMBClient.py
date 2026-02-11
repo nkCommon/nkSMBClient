@@ -1,5 +1,6 @@
-import smbclient
+import json
 import os
+import smbclient
 import io
 import pandas as pd
 from dataclasses import dataclass
@@ -317,7 +318,36 @@ class nkSMBClient:
 
         with smbclient.open_file(smb_path, mode="wb") as f:
             f.write(data)
-    
+
+    def save_dict(
+        self,
+        data: dict[str, Any],
+        path_in_share: str,
+        *,
+        encoding: str = "utf-8",
+        create_folders_if_not_exist: bool = False,
+        **json_kwargs: Any,
+    ) -> None:
+        """
+        Save a Python dict to a file on the SMB share as JSON.
+
+        Args:
+            data: The dict to serialize and save.
+            path_in_share: File path relative to the share (e.g. "Tools\\data\\config.json").
+            encoding: Text encoding for the file (default utf-8).
+            create_folders_if_not_exist: If True, create parent folders for the file if needed.
+            **json_kwargs: Passed to json.dumps (e.g. indent=2, ensure_ascii=False).
+        """
+        if create_folders_if_not_exist:
+            parent = os.path.dirname(path_in_share)
+            if parent:
+                parent_smb_path = self._smb_path(parent)
+                smbclient.makedirs(parent_smb_path, exist_ok=True)
+        text = json.dumps(data, **json_kwargs)
+        smb_path = self._smb_path(path_in_share)
+        with smbclient.open_file(smb_path, mode="w", encoding=encoding) as f:
+            f.write(text)
+
     def delete_file(self, smb_file_path_in_share: str):
         smb_path = self._smb_path(smb_file_path_in_share)
         smbclient.remove(smb_path)

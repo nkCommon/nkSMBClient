@@ -189,3 +189,30 @@ class TestSMB(unittest.TestCase):
         after_delete_count = len(files)
         print(len(files))
         self.assertTrue(after_delete_count == before_upload_count)
+    
+    def test_json_upload_delete_file(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        before_upload_count = len(files)
+        
+        data = {
+            "name": "test",
+            "age": 30,
+            "city": "Stege"
+        }
+        
+        
+        client.save_dict(data=data, path_in_share=fr"{self.path_in_share}\test_upload.json")
+        
+        
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        after_upload_count = len(files)
+        print(len(files))
+        
+        self.assertTrue(after_upload_count == before_upload_count + 1)
+        client.delete_file(smb_file_path_in_share=fr"{self.path_in_share}\test_upload.json")
+        
+        files = client.list_files(path_in_share=self.path_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        after_delete_count = len(files)
+        print(len(files))
+        self.assertTrue(after_delete_count == before_upload_count)
