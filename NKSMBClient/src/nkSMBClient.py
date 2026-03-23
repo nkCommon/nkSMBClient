@@ -291,7 +291,8 @@ class nkSMBClient:
     def move_file(
         self, 
         source_file_path_in_share:str, 
-        target_file_path_in_share:str
+        target_file_path_in_share:str,
+        replace_if_exists: bool = False
         ):
         
         if source_file_path_in_share is None:
@@ -299,10 +300,16 @@ class nkSMBClient:
         if target_file_path_in_share is None:
             raise Exception("target filename missing")
 
+        ## check if file exists
+        if replace_if_exists:
+            if os.path.exists(target_file_path_in_share):
+                smbclient.remove(target_file_path_in_share)
+
         source_smb_path = self._smb_path(source_file_path_in_share)
         target_smb_path = self._smb_path(target_file_path_in_share)
 
 
+        
         smbclient.rename(source_smb_path, target_smb_path)
 
     def make_dirs(self, path_in_share: str):

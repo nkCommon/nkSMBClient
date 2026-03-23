@@ -16,10 +16,10 @@ class TestSMB(unittest.TestCase):
         self.pwd = os.getenv("SMB_PASSWORD")
         self.server = os.getenv("SMB_SERVER")
         self.share = os.getenv("SMB_SHARE")
-        self.path_in_share = r"Tools\testdata"
+        self.path_in_share = r"Tools\testdata_test"
         self.path_in_share_privateGPTTest = r"privateGPT\RAGS"
         self.path_in_share_rules = r"Tools\test_rules"
-        self.path_in_share_moved = r"Tools\testdata_moved"
+        self.path_in_share_moved = r"Tools\testdata_moved_test"
         self.local_tmp_folder = "/Users/lakas/tmp"
         self.headers = str("point,timeofcreation,deliveryid,accountnumber,bookingdate,valuedate,currencycode,bookedamount,currencycodeorigin,bookedamountorigin,shortadvice,technical,startingbalance,balance,extendedadvice1,extendedadvice2,extendedadvice3,extendedadvice4,extendedadvice5,extendedadvice6,extendedadvice7,extendedadvice8,extendedadvice9,extendedadvice10,extendedadvice11,extendedadvice12,extendedadvice13,extendedadvice14,extendedadvice15,extendedadvice16,extendedadvice17,extendedadvice18,extendedadvice19,extendedadvice20,extendedadvice21,extendedadvice22,extendedadvice23,extendedadvice24,extendedadvice25,extendedadvice26,extendedadvice27,extendedadvice28,extendedadvice29,extendedadvice30,extendedadvice31,extendedadvice32,extendedadvice33,extendedadvice34,extendedadvice35,extendedadvice36,extendedadvice37,extendedadvice38,extendedadvice39,extendedadvice40,extendedadvice41,extendedadvice42,extendedadvice43,extendedadvice44,extendedadvice45,extendedadvice46,extendedadvice47,extendedadvice48,extendedadvice49").split(',')
         return super().setUp()
@@ -112,9 +112,9 @@ class TestSMB(unittest.TestCase):
         result = client.list_files(path_in_share=self.path_in_share_moved)
         self.assertTrue(len(result)==0)
         
-        source_file = fr"{self.path_in_share}\BETALINGSOB"
-        target_file = fr"{self.path_in_share_moved}\BETALINGSOB"
-        client.move_file(source_file_path_in_share=source_file, target_file_path_in_share=target_file)
+        source_file = fr"{self.path_in_share}\BETALINGSOB_TEST"
+        target_file = fr"{self.path_in_share_moved}\BETALINGSOB_TEST"
+        client.move_file(source_file_path_in_share=source_file, target_file_path_in_share=target_file, replace_if_exists=True)
         
         result = client.list_files(path_in_share=self.path_in_share_moved)
         self.assertTrue(len(result)==1)
