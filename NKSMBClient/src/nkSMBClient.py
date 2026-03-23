@@ -287,7 +287,6 @@ class nkSMBClient:
         with smbclient.open_file(smb_path, mode="rb") as f:
             return pd.read_csv(f, **kwargs)
     
-    ## TODO: Implement create_folders_if_not_exist
     def move_file(
         self, 
         source_file_path_in_share:str, 
@@ -302,8 +301,10 @@ class nkSMBClient:
 
         ## check if file exists
         if replace_if_exists:
-            if os.path.exists(target_file_path_in_share):
-                smbclient.remove(target_file_path_in_share)
+            try:
+                self.delete_file(target_file_path_in_share)
+            except Exception as e:
+                pass
 
         source_smb_path = self._smb_path(source_file_path_in_share)
         target_smb_path = self._smb_path(target_file_path_in_share)
