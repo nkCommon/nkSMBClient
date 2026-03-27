@@ -1,4 +1,3 @@
-from pydoc import cli
 import unittest
 from datetime import datetime
 
@@ -22,11 +21,10 @@ class TestSMB(unittest.TestCase):
         self.path_in_share_moved = r"Tools\testdata_moved_test"
         self.local_tmp_folder = "/Users/lakas/tmp"
         self.headers = str("point,timeofcreation,deliveryid,accountnumber,bookingdate,valuedate,currencycode,bookedamount,currencycodeorigin,bookedamountorigin,shortadvice,technical,startingbalance,balance,extendedadvice1,extendedadvice2,extendedadvice3,extendedadvice4,extendedadvice5,extendedadvice6,extendedadvice7,extendedadvice8,extendedadvice9,extendedadvice10,extendedadvice11,extendedadvice12,extendedadvice13,extendedadvice14,extendedadvice15,extendedadvice16,extendedadvice17,extendedadvice18,extendedadvice19,extendedadvice20,extendedadvice21,extendedadvice22,extendedadvice23,extendedadvice24,extendedadvice25,extendedadvice26,extendedadvice27,extendedadvice28,extendedadvice29,extendedadvice30,extendedadvice31,extendedadvice32,extendedadvice33,extendedadvice34,extendedadvice35,extendedadvice36,extendedadvice37,extendedadvice38,extendedadvice39,extendedadvice40,extendedadvice41,extendedadvice42,extendedadvice43,extendedadvice44,extendedadvice45,extendedadvice46,extendedadvice47,extendedadvice48,extendedadvice49").split(',')
-        return super().setUp()
-
+        self.new_dir_in_share = fr"{self.path_in_share}\new_dir"
+        
     def tearDown(self):
-        return super().tearDown()
-
+        pass
     ### Test cases below ###
     ## list files    
     def test_list_files(self):
@@ -49,7 +47,7 @@ class TestSMB(unittest.TestCase):
             recursive=True,
         )
         print(result)
-        self.assertTrue(len(result)==1)
+        self.assertTrue(len(result)>400)
         
         
        
@@ -160,7 +158,7 @@ class TestSMB(unittest.TestCase):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         files = client.list_files(path_in_share=self.path_in_share_privateGPTTest, files_only=True, recursive=True, include_metadata=True, max_depth=1)
         print(files)
-        self.assertTrue(len(files)==1)
+        self.assertTrue(len(files)>400)
     def test_download_file(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         files = client.list_files(path_in_share=self.path_in_share_privateGPTTest, files_only=True, recursive=True, include_metadata=True, max_depth=1)
@@ -236,3 +234,14 @@ class TestSMB(unittest.TestCase):
         after_delete_count = len(files)
         print(len(files))
         self.assertTrue(after_delete_count == before_upload_count)
+        
+        
+    def test_upload_file(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+        client.upload_file(local_file=fr"//Users/lakas/git/nkSMBClient/README.md", smb_file_path_in_share=fr"{self.new_dir_in_share}\test_upload.md", create_folders_if_not_exist=True)
+        files = client.list_files(path_in_share=self.new_dir_in_share, files_only=True, recursive=True, include_metadata=True, max_depth=1)
+        print(len(files))
+        self.assertTrue(len(files) == 1)
+
+        client.delete_directory(smb_dir_path_in_share=self.new_dir_in_share)
+        

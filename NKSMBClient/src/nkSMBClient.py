@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from typing import Any, Collection
+from pathlib import PureWindowsPath
 
 
 @dataclass
@@ -343,8 +344,16 @@ class nkSMBClient:
         with open(local_file_path, "wb") as f:
             f.write(data)
         
-    def upload_file(self, local_file: str, smb_file_path_in_share: str):
+    def upload_file(self, local_file: str, smb_file_path_in_share: str, create_folders_if_not_exist: bool = False):
         smb_path = self._smb_path(smb_file_path_in_share)
+        
+        # Create parent directories if needed
+        if create_folders_if_not_exist:
+            parent = str(PureWindowsPath(smb_file_path_in_share).parent)
+            if parent:
+                parent_smb_path = self._smb_path(parent)
+                smbclient.makedirs(parent_smb_path, exist_ok=True)
+        
         with open(local_file, "rb") as f:
             data = f.read()
 
@@ -380,7 +389,21 @@ class nkSMBClient:
         with smbclient.open_file(smb_path, mode="w", encoding=encoding) as f:
             f.write(text)
 
+
     def delete_file(self, smb_file_path_in_share: str):
         smb_path = self._smb_path(smb_file_path_in_share)
         smbclient.remove(smb_path)
-        
+    
+    
+    def delete_directory(self, smb_dir_path_in_share: str):
+        smb_path = self._smb_path(smb_dir_path_in_share)
+
+        for entry in smbclient.listdir(smb_path):
+            full_path = os.path.join(smb_path, entry)
+
+            if smbclient.path.isdir(full_path):
+                self.delete_directory(full_path)
+            else:
+                smbclient.remove(full_path)
+
+        smbclient.rmdir(smb_path)
