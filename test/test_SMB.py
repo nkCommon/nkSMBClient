@@ -236,6 +236,69 @@ class TestSMB(unittest.TestCase):
         self.assertTrue(after_delete_count == before_upload_count)
         
         
+    def test_read_json_file(self):
+        client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
+
+        data = [
+            {
+                "json_featuretype" : "nye_ejere",
+                "bfe_nummer" : 1320468,
+                "matnr_ejerlavsnavn" : "1y, Kvislemark By, Kvislemark",
+                "temanavn" : "Beskyttede naturtyper",
+                "overtagelsesdato" : "20260901",
+                "EjerType" : "Person",
+                "EjerStatusKode_T" : "Hovedejer",
+                "EjendePersonPersonNR" : "2911792047",
+                "EjendeVirksomhedCVRnr" : None,
+                "NavnJusteret" : "Mogens Møller",
+                "EjersAdresseDanmark" : "Fuglebjergvej 2A, Sneslev, 4250 Fuglebjerg",
+                "EjerensStatus" : "bopael_i_danmark"
+            },
+            {
+                "json_featuretype" : "nye_ejere",
+                "bfe_nummer" : 1320468,
+                "matnr_ejerlavsnavn" : "1y, Kvislemark By, Kvislemark",
+                "temanavn" : "Beskyttede sten- og jorddiger",
+                "overtagelsesdato" : "20260901",
+                "EjerType" : "Person",
+                "EjerStatusKode_T" : "Hovedejer",
+                "EjendePersonPersonNR" : "2911792047",
+                "EjendeVirksomhedCVRnr" : None,
+                "NavnJusteret" : "Mogens Møller",
+                "EjersAdresseDanmark" : "Fuglebjergvej 2A, Sneslev, 4250 Fuglebjerg",
+                "EjerensStatus" : "bopael_i_danmark"
+            },
+            {
+                "json_featuretype" : "nye_ejere",
+                "bfe_nummer" : 1322707,
+                "matnr_ejerlavsnavn" : "4a, Herluflille By, Herlufmagle",
+                "temanavn" : "Beskyttede sten- og jorddiger",
+                "overtagelsesdato" : "20260901",
+                "EjerType" : "Virksomhed",
+                "EjerStatusKode_T" : "Hovedejer",
+                "EjendePersonPersonNR" : None,
+                "EjendeVirksomhedCVRnr" : 41469633,
+                "NavnJusteret" : "Tybjerggaard Breeding A/S",
+                "EjersAdresseDanmark" : "Tybjergvej 20, Tybjerg, 4160 Herlufmagle",
+                "EjerensStatus" : "aktiv"
+            }
+        ]
+        local_json_path = fr"{self.local_tmp_folder}/test_read_json.json"
+        smb_json_path = fr"{self.path_in_share}\test_read_json.json"
+
+        with open(local_json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+
+        client.upload_file(local_file=local_json_path, smb_file_path_in_share=smb_json_path)
+
+        try:
+            read_data = client.read_dict(path_in_share=smb_json_path, encoding="utf-8")
+            print(read_data)
+            self.assertEqual(read_data, data)
+        finally:
+            client.delete_file(smb_file_path_in_share=smb_json_path)
+            os.remove(local_json_path)
+
     def test_upload_file(self):
         client = nkSMBClient(server=self.server, share=self.share, username=self.user, password=self.pwd)
         client.upload_file(local_file=fr"//Users/lakas/git/nkSMBClient/README.md", smb_file_path_in_share=fr"{self.new_dir_in_share}\test_upload.md", create_folders_if_not_exist=True)
